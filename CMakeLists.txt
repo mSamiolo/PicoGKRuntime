@@ -104,7 +104,7 @@ endif()
 add_subdirectory( ${PICOGK_ROOT_DIR}/GLFW EXCLUDE_FROM_ALL )
 
 # Add library target
-add_library(${LIB_NAME} SHARED)
+add_library(${LIB_NAME} STATIC)
 
 # Add a preprocessor definition for the debug build
 target_compile_definitions(${LIB_NAME} PRIVATE $<$<CONFIG:Debug>:DEBUG_BUILD>)
@@ -159,8 +159,8 @@ if( MSVC )
 else ()
 
     target_compile_options(${LIB_NAME} PRIVATE
-        $<$<CONFIG:Debug>:-g -O0 -fvisibility=hidden -fvisibility-inlines-hidden>
-        $<$<CONFIG:Release>:-O3 -fvisibility=hidden -fvisibility-inlines-hidden>
+        $<$<CONFIG:Debug>:-fPIC -g -O0 -fvisibility=hidden -fvisibility-inlines-hidden>
+        $<$<CONFIG:Release>:-fPIC -O3 -fvisibility=hidden -fvisibility-inlines-hidden>
 )
 endif()
 
@@ -216,8 +216,3 @@ add_custom_command(
     							-P ${CMAKE_CURRENT_SOURCE_DIR}/CMake_Utils/PicoGKBuildHeader.cmake
     COMMENT "Create build headers"
 )
-
-
-
- 
-
