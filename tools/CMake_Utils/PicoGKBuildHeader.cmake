@@ -8,7 +8,9 @@ function(generate_build_header)
 
     # Create the content of the PicoGKBuild.h file
     set(    BUILD_HEADER_CONTENT
-"#ifndef PICOGK_BUILD_H\n#define PICOGK_BUILD_H\n\n\
+"
+#ifndef PICOGK_BUILD_H\n
+#define PICOGK_BUILD_H\n
 #define PICOGK_BUILD       \"${BUILD_DATE_TIME}\"\n\
 #define PICOGK_LIB_VERSION \"${LIB_VERSION}\"\n\
 #define PICOGK_LIB_NAME    \"${LIB_NAME}\"\n

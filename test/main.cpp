@@ -16,7 +16,7 @@
 // THE SOFTWARE.
 //
 
-#include "../API/PicoGK.h"
+#include "../include/PicoGK.h"
 #include <iostream>
 #include "PicoGKStlLoader.h"
 #include <thread>

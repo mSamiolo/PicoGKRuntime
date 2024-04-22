@@ -1,7 +1,7 @@
 # Everything temporary will be placed in these directories
 Build/
-Dist/
 vcpkg/
+target
 
 # globs
 Makefile.in

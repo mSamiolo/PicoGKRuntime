@@ -45,13 +45,18 @@ cmake_policy( SET CMP0091 NEW ) #enable MSVC_RUNTIME_LIBRARY property
 cmake_policy( SET CMP0042 NEW ) #enable MACOSX_RPATH
 set( CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL" )
 
+if(UNIX)  # Check for generic Unix-like system
+    set(CMAKE_C_COMPILER clang)
+    set(CMAKE_CXX_COMPILER clang++)
+endif()
+
 project(PicoGK VERSION ${LIB_VERSION})
 
 # Set the C++ standard to C++20 or higher
 set(CMAKE_CXX_STANDARD 20)
 
 # Set the output directory for the generated libraries and executables
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/Dist)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/target)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/Lib)
 set(PICOGK_ROOT_DIR ${CMAKE_CURRENT_SOURCE_DIR} )
 
@@ -60,7 +65,7 @@ if( WIN32 )
 	set(LIB_NAME "picogk.${LIB_VERSION_MAJOR}.${LIB_VERSION_MINOR}")
 else()
 	# unix-like systems automatically append version number
-	set(LIB_NAME "picogk")
+	set(LIB_NAME "libpicogk")
 endif()
 
 # Option to control submodule update and initialization
@@ -92,7 +97,7 @@ set( USE_EXPLICIT_INSTANTIATION OFF )
 #use release TBB for both debug and release configs
 set( TBB_DEBUG_SUFFIX "" )
 
-add_subdirectory( ${PICOGK_ROOT_DIR}/openvdb EXCLUDE_FROM_ALL )
+add_subdirectory( ${PICOGK_ROOT_DIR}/external/openvdb EXCLUDE_FROM_ALL )
 
 if( MSVC )
   set_property(TARGET openvdb_static PROPERTY
@@ -101,7 +106,7 @@ endif()
 
 #include GLFW
 
-add_subdirectory( ${PICOGK_ROOT_DIR}/GLFW EXCLUDE_FROM_ALL )
+add_subdirectory( ${PICOGK_ROOT_DIR}/external/GLFW EXCLUDE_FROM_ALL )
 
 # Add library target
 add_library(${LIB_NAME} STATIC)
@@ -119,8 +124,7 @@ endif()
 
 # Add all .cpp and .c files recursively from the Source directory
 file(GLOB_RECURSE SOURCES
-    "Source/*.cpp"
-    "Source/*.c"
+    "src/*.cpp"
 )
 
 # Add the sources to the library target
@@ -132,19 +136,19 @@ target_sources(${LIB_NAME}
 # Include directories for the library target
 target_include_directories(${LIB_NAME}
     PUBLIC
-    ${CMAKE_CURRENT_SOURCE_DIR}/API
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 
-# Add the API header files to the library target
-file(GLOB API_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/API/*.h")
+# Add the include header files to the library target
+file(GLOB API_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/include/*.h")
 target_sources(${LIB_NAME} PRIVATE ${API_HEADERS})
 
 # Add the header files from the CPP folder to the library target
-file(GLOB CPP_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/Source/*.h")
+file(GLOB CPP_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/src/*.h")
 target_sources(${LIB_NAME} PRIVATE ${CPP_HEADERS})
 
 # Organize files into virtual folders using the source_group command
-source_group("PicoGK API" FILES ${API_HEADERS})
+source_group("PicoGK include" FILES ${API_HEADERS})
 
 source_group("PicoGK Classes" FILES ${CPP_HEADERS})
 
@@ -180,39 +184,30 @@ endforeach()
 # Set the Debug postfix for the library name
 set_target_properties(${LIB_NAME} PROPERTIES DEBUG_POSTFIX "d")
 
-# Add executable target for APITests
-add_executable(APITests)
-
-# Add the main.cpp file from APITests directory
-target_sources(APITests PRIVATE APITests/main.cpp)
-
-# Link the APITests executable with the library target
-target_link_libraries(APITests PRIVATE ${LIB_NAME})
-
-# Define a custom command to copy header files to Dist folder
+# Define a custom command to copy header files to target folder
 add_custom_command(
     TARGET ${LIB_NAME} POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
-        ${CMAKE_CURRENT_SOURCE_DIR}/API
-        ${CMAKE_CURRENT_SOURCE_DIR}/Dist
-    COMMENT "Copying header files to Dist folder"
-)
-
-# Define a custom command to copy library files to Dist folder
-add_custom_command(
-    TARGET ${LIB_NAME} POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_directory
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/target
+    COMMENT "Copying header files to target folder"
+    )
+    
+    # Define a custom command to copy library files to target folder
+    add_custom_command(
+        TARGET ${LIB_NAME} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
         ${CMAKE_BINARY_DIR}/Lib
-        ${CMAKE_CURRENT_SOURCE_DIR}/Dist
-    COMMENT "Copying library files to Dist folder"
-)
-
-add_custom_command(
-    TARGET ${LIB_NAME} PRE_BUILD
-    COMMAND ${CMAKE_COMMAND} -E echo "Creating build headers..."
-    COMMAND ${CMAKE_COMMAND} 	-DAPIDIR=${CMAKE_CURRENT_SOURCE_DIR}/API 
-    							-DLIB_VERSION=${LIB_VERSION}
-    							-DLIB_NAME=${LIB_NAME}
-    							-P ${CMAKE_CURRENT_SOURCE_DIR}/CMake_Utils/PicoGKBuildHeader.cmake
-    COMMENT "Create build headers"
-)
+        ${CMAKE_CURRENT_SOURCE_DIR}/target
+        COMMENT "Copying library files to target folder"
+        )
+        
+        add_custom_command(
+            TARGET ${LIB_NAME} PRE_BUILD
+            COMMAND ${CMAKE_COMMAND} -E echo "Creating build headers..."
+            COMMAND ${CMAKE_COMMAND} 	-DAPIDIR=${CMAKE_CURRENT_SOURCE_DIR}/include 
+            -DLIB_VERSION=${LIB_VERSION}
+            -DLIB_NAME=${LIB_NAME}
+            -P ${CMAKE_CURRENT_SOURCE_DIR}/tools/CMake_Utils/PicoGKBuildHeader.cmake
+            COMMENT "Create build headers"
+            )
